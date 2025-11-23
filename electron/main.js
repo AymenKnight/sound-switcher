@@ -24,14 +24,117 @@ function getResourcePath(relativePath) {
 
 let mainWindow;
 let tray;
+let playbackDevices = [];
+let recordingDevices = [];
 
-function createTray() {
-  // Create tray icon
-  const iconPath = path.join(__dirname, "tray-icon.png");
-  const icon = nativeImage.createFromPath(iconPath);
-  tray = new Tray(icon);
+// Function to get playback devices
+async function getPlaybackDevices() {
+  try {
+    const psScript = getResourcePath(
+      path.join("scripts", "get-playback-devices.ps1")
+    );
+    const { stdout } = await execPromise(
+      `powershell -ExecutionPolicy Bypass -File "${psScript}"`
+    );
+    return JSON.parse(stdout.trim());
+  } catch (error) {
+    console.error("Error getting playback devices:", error);
+    return [];
+  }
+}
+
+// Function to get recording devices
+async function getRecordingDevices() {
+  try {
+    const psScript = getResourcePath(
+      path.join("scripts", "get-recording-devices.ps1")
+    );
+    const { stdout } = await execPromise(
+      `powershell -ExecutionPolicy Bypass -File "${psScript}"`
+    );
+    return JSON.parse(stdout.trim());
+  } catch (error) {
+    console.error("Error getting recording devices:", error);
+    return [];
+  }
+}
+
+// Function to set default playback device
+async function setDefaultPlaybackDevice(deviceId) {
+  try {
+    const psScript = getResourcePath(
+      path.join("scripts", "set-default-playback.ps1")
+    );
+    await execPromise(
+      `powershell -ExecutionPolicy Bypass -File "${psScript}" -DeviceId "${deviceId}"`
+    );
+    return true;
+  } catch (error) {
+    console.error("Error setting playback device:", error);
+    return false;
+  }
+}
+
+// Function to set default recording device
+async function setDefaultRecordingDevice(deviceId) {
+  try {
+    const psScript = getResourcePath(
+      path.join("scripts", "set-default-recording.ps1")
+    );
+    await execPromise(
+      `powershell -ExecutionPolicy Bypass -File "${psScript}" -DeviceId "${deviceId}"`
+    );
+    return true;
+  } catch (error) {
+    console.error("Error setting recording device:", error);
+    return false;
+  }
+}
+
+// Function to update tray menu with current devices
+async function updateTrayMenu() {
+  playbackDevices = await getPlaybackDevices();
+  recordingDevices = await getRecordingDevices();
+
+  const playbackMenuItems = playbackDevices.map((device) => ({
+    label: device.name,
+    type: "radio",
+    checked: device.isDefault,
+    click: async () => {
+      await setDefaultPlaybackDevice(device.id);
+      await updateTrayMenu(); // Refresh menu
+    },
+  }));
+
+  const recordingMenuItems = recordingDevices.map((device) => ({
+    label: device.name,
+    type: "radio",
+    checked: device.isDefault,
+    click: async () => {
+      await setDefaultRecordingDevice(device.id);
+      await updateTrayMenu(); // Refresh menu
+    },
+  }));
 
   const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "🔊 Playback Devices",
+      enabled: false,
+    },
+    ...playbackMenuItems,
+    { type: "separator" },
+    {
+      label: "🎤 Recording Devices",
+      enabled: false,
+    },
+    ...recordingMenuItems,
+    { type: "separator" },
+    {
+      label: "🔄 Refresh Devices",
+      click: async () => {
+        await updateTrayMenu();
+      },
+    },
     {
       label: "Show App",
       click: () => {
@@ -41,6 +144,7 @@ function createTray() {
         }
       },
     },
+    { type: "separator" },
     {
       label: "Quit",
       click: () => {
@@ -50,8 +154,19 @@ function createTray() {
     },
   ]);
 
-  tray.setToolTip("Sound Switcher");
   tray.setContextMenu(contextMenu);
+}
+
+function createTray() {
+  // Create tray icon
+  const iconPath = path.join(__dirname, "tray-icon.png");
+  const icon = nativeImage.createFromPath(iconPath);
+  tray = new Tray(icon);
+
+  tray.setToolTip("Sound Switcher");
+
+  // Initial menu load
+  updateTrayMenu();
 
   tray.on("click", () => {
     if (mainWindow) {
