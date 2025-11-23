@@ -10,6 +10,13 @@ const path = require("path");
 const { exec } = require("child_process");
 const util = require("util");
 const execPromise = util.promisify(exec);
+const AutoLaunch = require("auto-launch");
+
+// Configure auto-launch
+const autoLauncher = new AutoLaunch({
+  name: "Sound Switcher",
+  path: app.getPath("exe"),
+});
 
 // Helper function to get the correct path for scripts and tools
 function getResourcePath(relativePath) {
@@ -116,6 +123,14 @@ async function updateTrayMenu() {
     },
   }));
 
+  // Check auto-launch status
+  let autoLaunchEnabled = false;
+  try {
+    autoLaunchEnabled = await autoLauncher.isEnabled();
+  } catch (error) {
+    console.error("Error checking auto-launch:", error);
+  }
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: "🔊 Playback Devices",
@@ -145,6 +160,23 @@ async function updateTrayMenu() {
       },
     },
     { type: "separator" },
+    {
+      label: autoLaunchEnabled ? "✓ Start with Windows" : "Start with Windows",
+      type: "checkbox",
+      checked: autoLaunchEnabled,
+      click: async (menuItem) => {
+        try {
+          if (menuItem.checked) {
+            await autoLauncher.enable();
+          } else {
+            await autoLauncher.disable();
+          }
+          await updateTrayMenu(); // Refresh menu
+        } catch (error) {
+          console.error("Error toggling auto-launch:", error);
+        }
+      },
+    },
     {
       label: "Quit",
       click: () => {
@@ -210,7 +242,10 @@ function createWindow() {
   }
 
   mainWindow.once("ready-to-show", () => {
-    mainWindow.show();
+    // Only show window if not launched minimized (e.g., from Windows startup)
+    if (!app.getLoginItemSettings().wasOpenedAtLogin) {
+      mainWindow.show();
+    }
   });
 
   // Minimize to tray instead of closing
@@ -223,7 +258,18 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Enable auto-launch on Windows startup
+  try {
+    const isEnabled = await autoLauncher.isEnabled();
+    if (!isEnabled) {
+      await autoLauncher.enable();
+      console.log("Auto-launch enabled");
+    }
+  } catch (error) {
+    console.error("Error setting auto-launch:", error);
+  }
+
   createTray();
   createWindow();
 
