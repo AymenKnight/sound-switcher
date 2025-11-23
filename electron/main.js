@@ -10,6 +10,7 @@ const path = require("path");
 const { exec } = require("child_process");
 const util = require("util");
 const execPromise = util.promisify(exec);
+const sudo = require("sudo-prompt");
 
 // Helper function to get the correct path for scripts and tools
 function getResourcePath(relativePath) {
@@ -234,10 +235,44 @@ ipcMain.handle(
       const psScript = getResourcePath(
         path.join("scripts", "set-enhancement.ps1")
       );
-      await execPromise(
-        `powershell -ExecutionPolicy Bypass -File "${psScript}" -DeviceId "${deviceId}" -Enhancement "${enhancement}" -Value ${value}`
+      const batScript = getResourcePath(
+        path.join("scripts", "set-enhancement-elevated.bat")
       );
-      return { success: true };
+      // Convert boolean to integer (1 or 0)
+      const intValue = value ? 1 : 0;
+      const command = `powershell -ExecutionPolicy Bypass -File "${psScript}" -DeviceId "${deviceId}" -Enhancement "${enhancement}" -Value ${intValue}`;
+
+      // Try without elevation first
+      try {
+        const result = await execPromise(command);
+        return { success: true };
+      } catch (firstError) {
+        // If it fails (likely due to permissions), try with elevation using batch file
+        console.log("Requesting administrator privileges...");
+
+        return new Promise((resolve, reject) => {
+          const options = {
+            name: "Sound Switcher - Audio Enhancement",
+          };
+
+          // Use batch file for better compatibility with sudo-prompt
+          const elevatedCommand = `"${batScript}" "${deviceId}" "${enhancement}" ${intValue}`;
+
+          sudo.exec(elevatedCommand, options, (error, stdout, stderr) => {
+            if (error) {
+              console.error("Error with elevated privileges:", error);
+              console.error("stderr:", stderr);
+              resolve({
+                error: "Administrator privileges denied or command failed",
+              });
+            } else {
+              console.log("Enhancement set successfully with admin privileges");
+              console.log("stdout:", stdout);
+              resolve({ success: true });
+            }
+          });
+        });
+      }
     } catch (error) {
       console.error("Error setting enhancement:", error);
       return { error: error.message };

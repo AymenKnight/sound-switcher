@@ -45,16 +45,26 @@ function App() {
     try {
       if (activeTab === "playback") {
         await window.electronAPI.setDefaultPlaybackDevice(device.id);
+        // Set selected device for enhancements (only for playback)
+        setSelectedDevice({ ...device, type: "playback" });
       } else {
         await window.electronAPI.setDefaultRecordingDevice(device.id);
+        // Clear selected device for recording (no enhancements)
+        setSelectedDevice(null);
       }
 
-      setSelectedDevice(device);
       await loadDevices(); // Reload to update default status
     } catch (err) {
       setError(err.message);
     }
   };
+
+  // Clear selected device when switching tabs
+  useEffect(() => {
+    if (activeTab === "recording") {
+      setSelectedDevice(null);
+    }
+  }, [activeTab]);
 
   const currentDevices =
     activeTab === "playback" ? playbackDevices : recordingDevices;
@@ -99,7 +109,7 @@ function App() {
               type={activeTab}
             />
 
-            {selectedDevice && (
+            {selectedDevice && activeTab === "playback" && (
               <Enhancements device={selectedDevice} onRefresh={loadDevices} />
             )}
           </>

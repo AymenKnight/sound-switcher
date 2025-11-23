@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 function Enhancements({ device, onRefresh }) {
   const [enhancements, setEnhancements] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadEnhancements();
@@ -10,37 +11,67 @@ function Enhancements({ device, onRefresh }) {
 
   const loadEnhancements = async () => {
     if (!device) return;
-    
+
     setLoading(true);
+    setError(null);
     try {
       const result = await window.electronAPI.getDeviceEnhancements(device.id);
-      setEnhancements(result);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setEnhancements(result);
+      }
     } catch (err) {
-      console.error('Error loading enhancements:', err);
+      console.error("Error loading enhancements:", err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggle = async (enhancement, currentValue) => {
+  const handleToggle = async (
+    enhancementKey,
+    enhancementGuid,
+    currentValue
+  ) => {
     try {
-      await window.electronAPI.setDeviceEnhancement(
+      const result = await window.electronAPI.setDeviceEnhancement(
         device.id,
-        enhancement,
+        enhancementKey,
         !currentValue
       );
-      await loadEnhancements();
-      if (onRefresh) onRefresh();
+
+      if (result.error) {
+        setError(
+          "⚠️ Administrator privileges required. Please run the app as administrator to modify enhancements."
+        );
+      } else {
+        setError(null);
+        await loadEnhancements();
+        if (onRefresh) onRefresh();
+      }
     } catch (err) {
-      console.error('Error toggling enhancement:', err);
+      console.error("Error toggling enhancement:", err);
+      setError(
+        "⚠️ Administrator privileges required. Please run the app as administrator to modify enhancements."
+      );
     }
   };
 
   if (loading) {
     return (
       <div className="enhancements">
-        <h3>Sound Enhancements</h3>
-        <div className="loading">Loading enhancements...</div>
+        <h3>🎛️ Audio Enhancements</h3>
+        <div className="loading">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="enhancements">
+        <h3>🎛️ Audio Enhancements</h3>
+        <p className="enhancement-error">{error}</p>
       </div>
     );
   }
@@ -48,9 +79,34 @@ function Enhancements({ device, onRefresh }) {
   if (!enhancements || !enhancements.available) {
     return (
       <div className="enhancements">
-        <h3>Sound Enhancements</h3>
-        <p style={{ color: '#666', fontSize: '14px' }}>
+        <h3>🎛️ Audio Enhancements</h3>
+        <p className="enhancement-unavailable">
           No enhancements available for this device
+        </p>
+      </div>
+    );
+  }
+
+  // Get the list of enhancements from the result
+  const enhancementsList = enhancements.enhancements || [];
+  const allDisabled = enhancements.allDisabled || false;
+
+  // Icon mapping for known enhancements
+  const iconMap = {
+    virtualSurround: "🎧",
+    speakerFill: "🔊",
+    headphoneVirtualization: "🎵",
+    bassBoost: "🔉",
+    loudnessEqualization: "📊",
+    roomCorrection: "🏠",
+  };
+
+  if (enhancementsList.length === 0) {
+    return (
+      <div className="enhancements">
+        <h3>🎛️ Audio Enhancements</h3>
+        <p className="enhancement-unavailable">
+          No enhancements detected for this device
         </p>
       </div>
     );
@@ -58,58 +114,59 @@ function Enhancements({ device, onRefresh }) {
 
   return (
     <div className="enhancements">
-      <h3>Sound Enhancements for {device.name}</h3>
-      
-      <div className="enhancement-item">
-        <span>Bass Boost</span>
-        <label className="switch">
-          <input
-            type="checkbox"
-            checked={enhancements.bassBoost || false}
-            onChange={() => handleToggle('bassBoost', enhancements.bassBoost)}
-          />
-          <span className="slider"></span>
-        </label>
-      </div>
+      <h3>🎛️ Audio Enhancements</h3>
 
-      <div className="enhancement-item">
-        <span>Virtual Surround</span>
-        <label className="switch">
-          <input
-            type="checkbox"
-            checked={enhancements.virtualSurround || false}
-            onChange={() => handleToggle('virtualSurround', enhancements.virtualSurround)}
-          />
-          <span className="slider"></span>
-        </label>
-      </div>
+      {allDisabled && (
+        <div className="enhancement-warning">
+          ⚠️ All enhancements are disabled in Windows Sound settings
+        </div>
+      )}
 
-      <div className="enhancement-item">
-        <span>Room Correction</span>
-        <label className="switch">
-          <input
-            type="checkbox"
-            checked={enhancements.roomCorrection || false}
-            onChange={() => handleToggle('roomCorrection', enhancements.roomCorrection)}
-          />
-          <span className="slider"></span>
-        </label>
-      </div>
+      <div className="enhancement-list">
+        {enhancementsList.map((enhancement) => {
+          const isEnabled = enhancement.enabled && !allDisabled;
+          const icon = iconMap[enhancement.key] || "🎛️";
 
-      <div className="enhancement-item">
-        <span>Loudness Equalization</span>
-        <label className="switch">
-          <input
-            type="checkbox"
-            checked={enhancements.loudnessEqualization || false}
-            onChange={() => handleToggle('loudnessEqualization', enhancements.loudnessEqualization)}
-          />
-          <span className="slider"></span>
-        </label>
+          return (
+            <div
+              key={enhancement.guid}
+              className="enhancement-item"
+              title={enhancement.description || enhancement.name}
+            >
+              <span className="enhancement-label">
+                <span className="enhancement-icon">{icon}</span>
+                <span>
+                  {enhancement.name}
+                  <span
+                    className={`enhancement-status ${
+                      isEnabled ? "active" : "inactive"
+                    }`}
+                  >
+                    {isEnabled ? " • On" : " • Off"}
+                  </span>
+                </span>
+              </span>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={isEnabled}
+                  onChange={() =>
+                    handleToggle(enhancement.key, enhancement.guid, isEnabled)
+                  }
+                  disabled={allDisabled}
+                />
+                <span className="slider"></span>
+              </label>
+            </div>
+          );
+        })}
       </div>
+      <p className="enhancement-note">
+        💡 Requires administrator privileges to modify. Click any toggle to
+        enable/disable.
+      </p>
     </div>
   );
 }
 
 export default Enhancements;
-

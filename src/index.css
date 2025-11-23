@@ -250,10 +250,10 @@ body {
 /* Enhancements */
 .enhancements {
   margin: 12px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  padding: 14px;
+  background: rgba(102, 126, 234, 0.05);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(102, 126, 234, 0.2);
 }
 
 .enhancements h3 {
@@ -261,6 +261,10 @@ body {
   margin-bottom: 12px;
   color: #e0e0e0;
   font-weight: 600;
+}
+
+.enhancement-list {
+  margin-bottom: 8px;
 }
 
 .enhancement-item {
@@ -275,9 +279,60 @@ body {
   border-bottom: none;
 }
 
-.enhancement-item span {
+.enhancement-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 12px;
   color: #b0b0b0;
+  flex: 1;
+}
+
+.enhancement-icon {
+  font-size: 14px;
+}
+
+.enhancement-status {
+  font-size: 10px;
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+.enhancement-status.active {
+  color: #4caf50;
+}
+
+.enhancement-status.inactive {
+  color: #666;
+}
+
+.enhancement-warning {
+  padding: 10px;
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 6px;
+  font-size: 11px;
+  color: #ffb74d;
+  margin-bottom: 12px;
+}
+
+.enhancement-error {
+  font-size: 11px;
+  color: #ff6b6b;
+  margin: 0;
+}
+
+.enhancement-unavailable {
+  font-size: 11px;
+  color: #888;
+  margin: 0;
+}
+
+.enhancement-note {
+  font-size: 10px;
+  color: #666;
+  margin: 8px 0 0 0;
+  font-style: italic;
 }
 
 /* Toggle Switch */
