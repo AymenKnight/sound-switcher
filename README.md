@@ -9,6 +9,8 @@ A desktop application built with Electron and React for managing audio devices o
 - 🎛️ **Sound Enhancements** - Control audio enhancements like bass boost, virtual surround, and more
 - 💻 **Native Windows Integration** - Uses Windows COM APIs for reliable device management
 - 🎨 **Modern UI** - Clean and intuitive interface built with React
+- 🪟 **Frameless Window** - Custom title bar with minimize, maximize, and close controls
+- 📍 **System Tray** - Minimizes to tray instead of closing, with right-click menu to quit
 
 ## Prerequisites
 
@@ -19,12 +21,14 @@ A desktop application built with Electron and React for managing audio devices o
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd sound-switcher
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
@@ -52,6 +56,7 @@ The built application will be available in the `dist-electron` directory.
 ## How It Works
 
 The application uses:
+
 - **Electron** for the desktop application framework
 - **React** for the user interface
 - **PowerShell scripts** to interact with Windows audio APIs via COM objects
@@ -61,6 +66,7 @@ The application uses:
 ## Permissions
 
 The application requires:
+
 - PowerShell execution permissions (handled automatically)
 - Registry read access for audio device properties
 - Registry write access for audio enhancements (requires admin for some operations)
@@ -76,4 +82,3 @@ If you encounter issues:
 ## License
 
 MIT
-

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import DeviceList from './components/DeviceList';
-import Enhancements from './components/Enhancements';
+import { useState, useEffect } from "react";
+import TitleBar from "./components/TitleBar";
+import DeviceList from "./components/DeviceList";
+import Enhancements from "./components/Enhancements";
 
 function App() {
-  const [activeTab, setActiveTab] = useState('playback');
+  const [activeTab, setActiveTab] = useState("playback");
   const [playbackDevices, setPlaybackDevices] = useState([]);
   const [recordingDevices, setRecordingDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
@@ -17,11 +18,11 @@ function App() {
   const loadDevices = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const [playback, recording] = await Promise.all([
         window.electronAPI.getPlaybackDevices(),
-        window.electronAPI.getRecordingDevices()
+        window.electronAPI.getRecordingDevices(),
       ]);
 
       if (playback.error) {
@@ -42,12 +43,12 @@ function App() {
 
   const handleDeviceSelect = async (device) => {
     try {
-      if (activeTab === 'playback') {
+      if (activeTab === "playback") {
         await window.electronAPI.setDefaultPlaybackDevice(device.id);
       } else {
         await window.electronAPI.setDefaultRecordingDevice(device.id);
       }
-      
+
       setSelectedDevice(device);
       await loadDevices(); // Reload to update default status
     } catch (err) {
@@ -55,13 +56,15 @@ function App() {
     }
   };
 
-  const currentDevices = activeTab === 'playback' ? playbackDevices : recordingDevices;
+  const currentDevices =
+    activeTab === "playback" ? playbackDevices : recordingDevices;
 
   return (
     <div className="app">
+      <TitleBar />
       <div className="header">
-        <h1>🔊 Sound Switcher</h1>
-        <p>Manage your audio devices on Windows 10/11</p>
+        <h1>Sound Switcher</h1>
+        <p>Quick audio device switching</p>
       </div>
 
       <div className="content">
@@ -73,14 +76,14 @@ function App() {
 
         <div className="tabs">
           <button
-            className={`tab ${activeTab === 'playback' ? 'active' : ''}`}
-            onClick={() => setActiveTab('playback')}
+            className={`tab ${activeTab === "playback" ? "active" : ""}`}
+            onClick={() => setActiveTab("playback")}
           >
             🔊 Playback Devices
           </button>
           <button
-            className={`tab ${activeTab === 'recording' ? 'active' : ''}`}
-            onClick={() => setActiveTab('recording')}
+            className={`tab ${activeTab === "recording" ? "active" : ""}`}
+            onClick={() => setActiveTab("recording")}
           >
             🎤 Recording Devices
           </button>
@@ -97,10 +100,7 @@ function App() {
             />
 
             {selectedDevice && (
-              <Enhancements
-                device={selectedDevice}
-                onRefresh={loadDevices}
-              />
+              <Enhancements device={selectedDevice} onRefresh={loadDevices} />
             )}
           </>
         )}
@@ -110,4 +110,3 @@ function App() {
 }
 
 export default App;
-

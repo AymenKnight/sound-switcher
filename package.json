@@ -8,7 +8,8 @@
     "dev:vite": "vite",
     "dev:electron": "wait-on http://localhost:5173 && electron .",
     "build": "vite build",
-    "build:win": "npm run build && electron-builder --win --config.win.sign=null",
+    "build:win": "npm run build && npx @electron/packager . \"Sound Switcher\" --platform=win32 --arch=x64 --out=dist-packaged --overwrite --prune=true --icon=electron/icon.ico && powershell -Command \"Copy-Item -Recurse -Force electron/scripts 'dist-packaged/Sound Switcher-win32-x64/resources/'; Copy-Item -Recurse -Force electron/tools 'dist-packaged/Sound Switcher-win32-x64/resources/'\"",
+    "generate-icon": "node generate-icon.js",
     "preview": "vite preview"
   },
   "keywords": [
@@ -26,6 +27,8 @@
     "concurrently": "^8.2.2",
     "electron": "^28.1.0",
     "electron-builder": "^24.9.1",
+    "sharp": "^0.34.5",
+    "to-ico": "^1.1.5",
     "vite": "^5.0.11",
     "wait-on": "^7.2.0"
   },
@@ -58,14 +61,19 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
-      "requestedExecutionLevel": "asInvoker"
+      "requestedExecutionLevel": "asInvoker",
+      "signingHashAlgorithms": []
     },
     "nsis": {
       "oneClick": false,
