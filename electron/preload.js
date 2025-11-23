@@ -7,10 +7,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("set-default-playback-device", deviceId),
   setDefaultRecordingDevice: (deviceId) =>
     ipcRenderer.invoke("set-default-recording-device", deviceId),
-  getDeviceEnhancements: (deviceId) =>
-    ipcRenderer.invoke("get-device-enhancements", deviceId),
-  setDeviceEnhancement: (deviceId, enhancement, value) =>
-    ipcRenderer.invoke("set-device-enhancement", deviceId, enhancement, value),
   // Window controls
   windowMinimize: () => ipcRenderer.invoke("window-minimize"),
   windowMaximize: () => ipcRenderer.invoke("window-maximize"),

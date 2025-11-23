@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
 import TitleBar from "./components/TitleBar";
 import DeviceList from "./components/DeviceList";
-import Enhancements from "./components/Enhancements";
 
 function App() {
   const [activeTab, setActiveTab] = useState("playback");
   const [playbackDevices, setPlaybackDevices] = useState([]);
   const [recordingDevices, setRecordingDevices] = useState([]);
-  const [selectedDevice, setSelectedDevice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -45,12 +43,8 @@ function App() {
     try {
       if (activeTab === "playback") {
         await window.electronAPI.setDefaultPlaybackDevice(device.id);
-        // Set selected device for enhancements (only for playback)
-        setSelectedDevice({ ...device, type: "playback" });
       } else {
         await window.electronAPI.setDefaultRecordingDevice(device.id);
-        // Clear selected device for recording (no enhancements)
-        setSelectedDevice(null);
       }
 
       await loadDevices(); // Reload to update default status
@@ -58,13 +52,6 @@ function App() {
       setError(err.message);
     }
   };
-
-  // Clear selected device when switching tabs
-  useEffect(() => {
-    if (activeTab === "recording") {
-      setSelectedDevice(null);
-    }
-  }, [activeTab]);
 
   const currentDevices =
     activeTab === "playback" ? playbackDevices : recordingDevices;
@@ -108,10 +95,6 @@ function App() {
               onDeviceSelect={handleDeviceSelect}
               type={activeTab}
             />
-
-            {selectedDevice && activeTab === "playback" && (
-              <Enhancements device={selectedDevice} onRefresh={loadDevices} />
-            )}
           </>
         )}
       </div>

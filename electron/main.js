@@ -10,7 +10,6 @@ const path = require("path");
 const { exec } = require("child_process");
 const util = require("util");
 const execPromise = util.promisify(exec);
-const sudo = require("sudo-prompt");
 
 // Helper function to get the correct path for scripts and tools
 function getResourcePath(relativePath) {
@@ -212,73 +211,6 @@ ipcMain.handle("set-default-recording-device", async (event, deviceId) => {
     return { error: error.message };
   }
 });
-
-ipcMain.handle("get-device-enhancements", async (event, deviceId) => {
-  try {
-    const psScript = getResourcePath(
-      path.join("scripts", "get-enhancements.ps1")
-    );
-    const { stdout } = await execPromise(
-      `powershell -ExecutionPolicy Bypass -File "${psScript}" -DeviceId "${deviceId}"`
-    );
-    return JSON.parse(stdout);
-  } catch (error) {
-    console.error("Error getting enhancements:", error);
-    return { error: error.message };
-  }
-});
-
-ipcMain.handle(
-  "set-device-enhancement",
-  async (event, deviceId, enhancement, value) => {
-    try {
-      const psScript = getResourcePath(
-        path.join("scripts", "set-enhancement.ps1")
-      );
-      const batScript = getResourcePath(
-        path.join("scripts", "set-enhancement-elevated.bat")
-      );
-      // Convert boolean to integer (1 or 0)
-      const intValue = value ? 1 : 0;
-      const command = `powershell -ExecutionPolicy Bypass -File "${psScript}" -DeviceId "${deviceId}" -Enhancement "${enhancement}" -Value ${intValue}`;
-
-      // Try without elevation first
-      try {
-        const result = await execPromise(command);
-        return { success: true };
-      } catch (firstError) {
-        // If it fails (likely due to permissions), try with elevation using batch file
-        console.log("Requesting administrator privileges...");
-
-        return new Promise((resolve, reject) => {
-          const options = {
-            name: "Sound Switcher - Audio Enhancement",
-          };
-
-          // Use batch file for better compatibility with sudo-prompt
-          const elevatedCommand = `"${batScript}" "${deviceId}" "${enhancement}" ${intValue}`;
-
-          sudo.exec(elevatedCommand, options, (error, stdout, stderr) => {
-            if (error) {
-              console.error("Error with elevated privileges:", error);
-              console.error("stderr:", stderr);
-              resolve({
-                error: "Administrator privileges denied or command failed",
-              });
-            } else {
-              console.log("Enhancement set successfully with admin privileges");
-              console.log("stdout:", stdout);
-              resolve({ success: true });
-            }
-          });
-        });
-      }
-    } catch (error) {
-      console.error("Error setting enhancement:", error);
-      return { error: error.message };
-    }
-  }
-);
 
 // Window control handlers
 ipcMain.handle("window-minimize", () => {
